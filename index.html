@@ -4,10 +4,21 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/src/style.css" />
     <title>Vite + TS</title>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="container">
+      <div class="info">
+        <span id="tracking">tracking</span>
+        <span id="playing">playing</span>
+        <span id="direction">0, 0</span>
+      </div>
+      <canvas id="canvas"></canvas>
+    </div>
     <script type="module" src="/src/main.ts"></script>
+    <script id="fragmentShader" type="x-shader/x-fragment">
+
+    </script>
   </body>
 </html>
