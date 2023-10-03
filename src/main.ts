@@ -3,15 +3,42 @@ import {fragmentShader, vertexShader} from './shaders.js';
 
 let camera: THREE.Camera, scene: THREE.Scene, light, renderer: THREE.WebGLRenderer, torus: THREE.Object3D<THREE.Object3DEventMap>, plane;
 
-const torusses: THREE.Object3D<THREE.Object3DEventMap>[] = [];
+const cirlesVisible: THREE.Object3D<THREE.Object3DEventMap>[] = [];
+const circlesInvisible: THREE.Object3D<THREE.Object3DEventMap>[] = [];
 
 let playing = true;
 let trackMouse = true;
 
 let WIDTH = 0;
 let HEIGHT = 0;
+let TIME = 0;
 
 let mouseX: number, mouseY: number;
+const addingCycle = () => {
+  const newCircle = circlesInvisible.shift();
+  if (newCircle)
+  {
+    newCircle.position.z = -3000;
+    cirlesVisible.push(newCircle);
+  }
+  
+  console.log(`${cirlesVisible.length}, ${circlesInvisible.length}`)
+}
+
+const addingInterval = setInterval(addingCycle, 1000);
+let removingInterval;
+
+const removingCycle = () => {
+  const oldCircle = cirlesVisible.shift();
+  if (oldCircle)
+  {
+    circlesInvisible.push(oldCircle);
+  }
+}
+
+const timeout = setTimeout(() => {
+  removingInterval = setInterval(removingCycle, 1000);
+})
 
 const uniforms = {
   iResolution: {value: new THREE.Vector3()},
@@ -23,6 +50,11 @@ const trackingText = document.getElementById("tracking");
 const playingText = document.getElementById("playing");
 const directionText = document.getElementById("direction");
 const timeText = document.getElementById("time");
+
+
+
+
+
 
 const changeText = (element: HTMLElement | null, text: string) => 
 {
@@ -51,8 +83,6 @@ const addNewTorus = (distance: number = -3000) => {
   torus.position.z = distance;
   torus.position.x = mouseX;
   torus.position.y = mouseY;
-
-  scene.add(torus);
   return torus;
 }
 
@@ -70,6 +100,9 @@ const stopLoop = () => {
 const init = () => {
   const container = document.getElementById("container");
   const canvas = document.getElementById("canvas");
+
+  mouseX = 0;
+  mouseY = 0;
   
   if (window && container && canvas) {
     //CONTAINER
@@ -132,7 +165,8 @@ const init = () => {
     for (let x = 0; x < 20; x++)
     {
       const d = 3000 / 20 * -x;
-      torusses.push(addNewTorus(d));
+      cirlesVisible.push(addNewTorus(d));
+      circlesInvisible.push(addNewTorus());
     }
 
 
@@ -147,31 +181,22 @@ const render = () => {
 
 
 
-const animate = (time: number) => {
+const animate = () => {
 
-  const loop = Math.floor(time / 10) / 100;
-  console.log(loop);
+  TIME++;
 
-  changeText(timeText, `${loop.toFixed(2)}s`);
-
-  if (loop % 1 === 0)
-  {
-    torusses.push(addNewTorus());
-     
-
-  }
-  torusses.forEach((t) => {
-    if (t.position.z > 200)
-    {
-      torusses.shift();
-      scene.remove(t);
-    }
-    t.position.z += 2;
+  cirlesVisible.forEach((t) => {
+    t.position.z += 2.5;
     const x = lerp(mouseX, 0, (t.position.z + 3000) / 3000);
     const y = lerp(mouseY, 0, (t.position.z + 3000) / 3000);
     t.position.x = x;
     t.position.y = y;
+    scene.add(t);
     
+  })
+
+  circlesInvisible.forEach((c) => {
+    scene.remove(c);
   })
 
   if (!playing)
@@ -180,8 +205,8 @@ const animate = (time: number) => {
   }
 
   uniforms.iResolution.value.set(WIDTH, HEIGHT, 1);
-  uniforms.iTime.value = loop;
-  uniforms.iMouse.value.set(-mouseX, -mouseY, 0, 0)
+  uniforms.iMouse.value.set(-mouseX, -mouseY, 0, 0);
+  uniforms.iTime.value = TIME * 0.01;
 
   
   requestAnimationFrame(animate);
