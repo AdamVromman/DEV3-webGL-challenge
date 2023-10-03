@@ -1,17 +1,28 @@
 import * as THREE from "three";
+import {fragmentShader, vertexShader} from './shaders.js';
 
-let camera: THREE.Camera, scene: THREE.Scene, light, renderer: THREE.WebGLRenderer, torus: THREE.Object3D<THREE.Object3DEventMap>;
+let camera: THREE.Camera, scene: THREE.Scene, light, renderer: THREE.WebGLRenderer, torus: THREE.Object3D<THREE.Object3DEventMap>, plane;
 
 const torusses: THREE.Object3D<THREE.Object3DEventMap>[] = [];
 
 let playing = true;
 let trackMouse = true;
 
+let WIDTH = 0;
+let HEIGHT = 0;
+
 let mouseX: number, mouseY: number;
+
+const uniforms = {
+  iResolution: {value: new THREE.Vector3()},
+  iTime: {value: 0},
+  iMouse: {value: new THREE.Vector4()}
+}
 
 const trackingText = document.getElementById("tracking");
 const playingText = document.getElementById("playing");
 const directionText = document.getElementById("direction");
+const timeText = document.getElementById("time");
 
 const changeText = (element: HTMLElement | null, text: string) => 
 {
@@ -24,9 +35,9 @@ const changeText = (element: HTMLElement | null, text: string) =>
 const normalizeMouseMovement = (x: number, y: number) => {
   if (window)
   {
-    mouseX = x - window.innerWidth / 2
+    mouseX = x - window.innerWidth / 2;
     mouseY = -y + window.innerHeight / 2;
-    changeText(directionText, `${mouseX}, ${mouseY}`)
+    changeText(directionText, `${mouseX}, ${mouseY}`);
   }
 }
 
@@ -62,8 +73,8 @@ const init = () => {
   
   if (window && container && canvas) {
     //CONTAINER
-    const WIDTH = window.innerWidth; 
-    const HEIGHT = window.innerHeight;
+    WIDTH = window.innerWidth; 
+    HEIGHT = window.innerHeight;
     const aspectRatio = WIDTH / HEIGHT;
 
     //RENDERER
@@ -91,6 +102,23 @@ const init = () => {
     camera.position.z = 200;
 
     scene.add(camera);
+
+    //BACKGROUND
+
+    const geometry = new THREE.PlaneGeometry(WIDTH * 10, HEIGHT * 10);
+    //const texture = new THREE.MeshBasicMaterial( { color: 0xff00ff } );
+    const texture = new  THREE.ShaderMaterial({
+      uniforms: uniforms,
+      vertexShader: vertexShader,
+      fragmentShader: fragmentShader,
+      transparent: true
+    })
+
+    plane = new THREE.Mesh(geometry, texture);
+    plane.position.z = -3000;
+    scene.add(plane);
+
+    
 
 
     //LIGHT
@@ -121,39 +149,42 @@ const render = () => {
 
 const animate = (time: number) => {
 
-  const loop = Math.floor(time * 0.1) / 100;
+  const loop = Math.floor(time / 10) / 100;
+  console.log(loop);
+
+  changeText(timeText, `${loop.toFixed(2)}s`);
 
   if (loop % 1 === 0)
   {
     torusses.push(addNewTorus());
-
-    const deletedTorus = torusses.shift();
-    if (deletedTorus)
-    {
-      scene.remove(deletedTorus)
-    }
      
 
   }
   torusses.forEach((t) => {
+    if (t.position.z > 200)
+    {
+      torusses.shift();
+      scene.remove(t);
+    }
     t.position.z += 2;
-    const x = lerp(mouseX, 0, (t.position.z + 3000) / 2000);
-    const y = lerp(mouseY, 0, (t.position.z + 3000) / 2000);
+    const x = lerp(mouseX, 0, (t.position.z + 3000) / 3000);
+    const y = lerp(mouseY, 0, (t.position.z + 3000) / 3000);
     t.position.x = x;
     t.position.y = y;
     
   })
-
-
-  console.log(`${Math.floor(torusses[19].position.x)} ${Math.floor(torusses[19].position.y)}`);
 
   if (!playing)
   {
     return ;
   }
 
+  uniforms.iResolution.value.set(WIDTH, HEIGHT, 1);
+  uniforms.iTime.value = loop;
+  uniforms.iMouse.value.set(-mouseX, -mouseY, 0, 0)
+
   
-  requestAnimationFrame(animate)
+  requestAnimationFrame(animate);
   render()
 }
 
