@@ -114,7 +114,7 @@ vec3 stars(vec2 uv, float offset){
    
     
     // translate uv then scale for center
-    uv -= vec2(0.5);
+    uv -= vec2(0.5 + (iMouse.xy * 0.025));
     uv = scale( vec2(trans) ) * uv;
     uv += vec2(0.5);
     

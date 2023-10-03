@@ -22,7 +22,6 @@ const addingCycle = () => {
     cirlesVisible.push(newCircle);
   }
   
-  console.log(`${cirlesVisible.length}, ${circlesInvisible.length}`)
 }
 
 const addingInterval = setInterval(addingCycle, 1000);
@@ -65,11 +64,12 @@ const changeText = (element: HTMLElement | null, text: string) =>
 }
 
 const normalizeMouseMovement = (x: number, y: number) => {
-  if (window)
-  {
-    mouseX = x - window.innerWidth / 2;
-    mouseY = -y + window.innerHeight / 2;
-    changeText(directionText, `${mouseX}, ${mouseY}`);
+  if (window) {
+    const xNorm = (x - WIDTH / 2) / (WIDTH / 2)
+    const yNorm = (y - HEIGHT / 2) / (HEIGHT / 2)
+    
+    mouseX = xNorm;
+    mouseY = yNorm;
   }
 }
 
@@ -187,8 +187,8 @@ const animate = () => {
 
   cirlesVisible.forEach((t) => {
     t.position.z += 2.5;
-    const x = lerp(mouseX, 0, (t.position.z + 3000) / 3000);
-    const y = lerp(mouseY, 0, (t.position.z + 3000) / 3000);
+    const x = lerp(mouseX * 3000, 0, (t.position.z + 3000) / 3000);
+    const y = lerp(-mouseY* 3000, 0, (t.position.z + 3000) / 3000);
     t.position.x = x;
     t.position.y = y;
     scene.add(t);
@@ -205,7 +205,7 @@ const animate = () => {
   }
 
   uniforms.iResolution.value.set(WIDTH, HEIGHT, 1);
-  uniforms.iMouse.value.set(-mouseX, -mouseY, 0, 0);
+  uniforms.iMouse.value.set(-mouseX, mouseY, 0, 0);
   uniforms.iTime.value = TIME * 0.01;
 
   
