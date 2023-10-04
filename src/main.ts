@@ -1,8 +1,9 @@
 import * as THREE from "three";
-import {fragmentShader, vertexShader} from './shaders.js';
+import {backgroundFragmentShader, backgroundVertexShader, spherefragmentShader, sphereVertexShader} from './shaders.js';
+import stewie from './stewie.jpg';
 
 
-let camera: THREE.Camera, scene: THREE.Scene, light, renderer: THREE.WebGLRenderer, torus: THREE.Object3D<THREE.Object3DEventMap>, plane;
+let camera: THREE.Camera, scene: THREE.Scene, renderer: THREE.WebGLRenderer, torus: THREE.Object3D<THREE.Object3DEventMap>, plane, sphere;
 
 const cirlesVisible: THREE.Object3D<THREE.Object3DEventMap>[] = [];
 const circlesInvisible: THREE.Object3D<THREE.Object3DEventMap>[] = [];
@@ -45,11 +46,20 @@ const timeout = setTimeout(() => {
   removingInterval = setInterval(removingCycle, 1000);
 })
 
-const uniforms = {
+const backgroundUniforms = {
   iResolution: {value: new THREE.Vector3()},
   iTime: {value: 0},
   iDirection: {value: new THREE.Vector2()}
 }
+
+const textureLoader = new THREE.TextureLoader();
+
+const sphereUniforms = {
+  iResolution: {value: new THREE.Vector3()},
+  iChannel0: {value: textureLoader.load(stewie)},
+  iChannelResolution: {value: new Array(4)},
+  iMouse: {value: new THREE.Vector4()}
+};
 
 const trackingText = document.getElementById("tracking");
 const playingText = document.getElementById("playing");
@@ -152,24 +162,15 @@ const init = () => {
     const geometry = new THREE.PlaneGeometry(WIDTH * 10, HEIGHT * 10);
     //const texture = new THREE.MeshBasicMaterial( { color: 0xff00ff } );
     const texture = new  THREE.ShaderMaterial({
-      uniforms: uniforms,
-      vertexShader: vertexShader,
-      fragmentShader: fragmentShader,
+      uniforms: backgroundUniforms,
+      vertexShader: backgroundVertexShader,
+      fragmentShader: backgroundFragmentShader,
       transparent: true
     })
 
     plane = new THREE.Mesh(geometry, texture);
     plane.position.z = -3000;
     scene.add(plane);
-
-    
-
-
-    //LIGHT
-    
-    light = new THREE.AmbientLight();
-
-    scene.add(light);
     
     //TORUSSES
 
@@ -179,6 +180,22 @@ const init = () => {
       cirlesVisible.push(addNewTorus(d));
       circlesInvisible.push(addNewTorus());
     }
+
+
+    //SPHERE
+
+    // const sphereGeom = new THREE.SphereGeometry(10, 100, 100);
+    // //const sphereMaterial = new THREE.MeshBasicMaterial({color: 0xff00ff});
+    // const sphereMaterial = new THREE.ShaderMaterial({
+    //   uniforms: sphereUniforms,
+    //   vertexShader: sphereVertexShader,
+    //   fragmentShader: spherefragmentShader
+    // })
+    // sphere = new THREE.Mesh(sphereGeom, sphereMaterial);
+    // sphere.position.z = 100;
+    // sphere.position.x = 20;
+    // scene.add(sphere);
+
   }
 }
 
@@ -243,9 +260,11 @@ const animate = () => {
     return ;
   }
 
-  uniforms.iResolution.value.set(WIDTH, HEIGHT, 1);
-  uniforms.iDirection.value.set(horTurn, vertTurn);
-  uniforms.iTime.value = TIME * 0.01;
+  backgroundUniforms.iResolution.value.set(WIDTH, HEIGHT, 1);
+  backgroundUniforms.iDirection.value.set(horTurn, vertTurn);
+  backgroundUniforms.iTime.value = TIME * 0.01;
+
+  sphereUniforms.iResolution.value.set(WIDTH, HEIGHT, 1);
   
   requestAnimationFrame(animate);
   render()
