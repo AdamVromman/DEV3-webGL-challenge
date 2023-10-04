@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import {fragmentShader, vertexShader} from './shaders.js';
 
+
 let camera: THREE.Camera, scene: THREE.Scene, light, renderer: THREE.WebGLRenderer, torus: THREE.Object3D<THREE.Object3DEventMap>, plane;
 
 const cirlesVisible: THREE.Object3D<THREE.Object3DEventMap>[] = [];
@@ -12,6 +13,11 @@ let trackMouse = true;
 let WIDTH = 0;
 let HEIGHT = 0;
 let TIME = 0;
+
+let vertTurn = 0;
+let horTurn = 0;
+let vertKey = "none";
+let horKey = "none";
 
 let mouseX: number, mouseY: number;
 const addingCycle = () => {
@@ -42,7 +48,7 @@ const timeout = setTimeout(() => {
 const uniforms = {
   iResolution: {value: new THREE.Vector3()},
   iTime: {value: 0},
-  iMouse: {value: new THREE.Vector4()}
+  iDirection: {value: new THREE.Vector2()}
 }
 
 const trackingText = document.getElementById("tracking");
@@ -73,7 +79,12 @@ const normalizeMouseMovement = (x: number, y: number) => {
   }
 }
 
+function easeOutQuart(x: number): number {
+  return 1 - Math.pow(1 - x, 4);
+  }
+
 const lerp = (x: number, y: number, a: number) => x * (1 - a) + y * a;
+const clamp = (a: number, min = 0, max = 1) => Math.min(max, Math.max(min, a));
 
 const addNewTorus = (distance: number = -3000) => {
 
@@ -168,8 +179,6 @@ const init = () => {
       cirlesVisible.push(addNewTorus(d));
       circlesInvisible.push(addNewTorus());
     }
-
-
   }
 }
 
@@ -184,11 +193,41 @@ const render = () => {
 const animate = () => {
 
   TIME++;
+  switch (horKey)
+  {
+    case "ArrowLeft": horTurn = clamp(horTurn -= 0.01, -1, 1); break;
+    case "ArrowRight": horTurn = clamp(horTurn += 0.01, -1, 1); break;
+    default: 
+      if (horTurn < 0)
+      {
+        horTurn = clamp(horTurn += 0.01, -1, 0);
+      }
+      if (horTurn > 0)
+      {
+        horTurn = clamp(horTurn -= 0.01, 0, 1);
+      }
+  }
+
+  switch (vertKey)
+  {
+    case "ArrowUp": vertTurn = clamp(vertTurn += 0.01, -1, 1); break;
+    case "ArrowDown": vertTurn = clamp(vertTurn -= 0.01, -1, 1); break;
+    default: 
+      if (vertTurn < 0)
+      {
+        vertTurn = clamp(vertTurn += 0.01, -1, 0);
+      }
+      if (vertTurn > 0)
+      {
+        vertTurn = clamp(vertTurn -= 0.01, 0, 1);
+      }
+      
+  }
 
   cirlesVisible.forEach((t) => {
     t.position.z += 2.5;
-    const x = lerp(mouseX * 3000, 0, (t.position.z + 3000) / 3000);
-    const y = lerp(-mouseY* 3000, 0, (t.position.z + 3000) / 3000);
+    const x = lerp(600 * horTurn, 0, easeOutQuart((t.position.z + 3000) / 3200));
+    const y = lerp(600 * vertTurn, 0, easeOutQuart((t.position.z + 3000) / 3200));
     t.position.x = x;
     t.position.y = y;
     scene.add(t);
@@ -205,9 +244,8 @@ const animate = () => {
   }
 
   uniforms.iResolution.value.set(WIDTH, HEIGHT, 1);
-  uniforms.iMouse.value.set(-mouseX, mouseY, 0, 0);
+  uniforms.iDirection.value.set(horTurn, vertTurn);
   uniforms.iTime.value = TIME * 0.01;
-
   
   requestAnimationFrame(animate);
   render()
@@ -234,5 +272,27 @@ window.addEventListener("mousemove", (e) => {
   if (e.pageX && e.pageY && trackMouse)
   {
     normalizeMouseMovement(e.pageX, e.pageY)
+  }
+})
+
+window.addEventListener("keydown", (e) => {
+  if (e.key === "ArrowLeft" || e.key === "ArrowRight")
+  {
+    horKey = e.key;
+  }
+  if (e.key === "ArrowUp" || e.key === "ArrowDown")
+  {
+    vertKey = e.key;
+  }
+})
+
+window.addEventListener("keyup", (e) => {
+  if (e.key === "ArrowLeft" || e.key === "ArrowRight")
+  {
+    horKey = "none";
+  }
+  if (e.key === "ArrowUp" || e.key === "ArrowDown")
+  {
+    vertKey = "none";
   }
 })

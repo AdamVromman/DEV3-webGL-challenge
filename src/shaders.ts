@@ -10,7 +10,7 @@ export const fragmentShader = `
       varying vec2 vUv;
       uniform vec3 iResolution;           // viewport resolution (in pixels)
       uniform float iTime;                 // shader playback time (in seconds)
-      uniform vec4 iMouse;
+      uniform vec2 iDirection;
       uniform sampler2D iChannel0;          // input channel. XX = 2D/Cube
 
       // divisions of grid
@@ -114,7 +114,7 @@ vec3 stars(vec2 uv, float offset){
    
     
     // translate uv then scale for center
-    uv -= vec2(0.5 + (iMouse.xy * 0.025));
+    uv -= vec2(0.5 + -iDirection.xy);
     uv = scale( vec2(trans) ) * uv;
     uv += vec2(0.5);
     
