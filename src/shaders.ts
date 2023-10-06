@@ -210,7 +210,7 @@ uniform sampler2D iChannel1;
 
 float Sphere (in vec2 Coord, in vec2 Position, in float Size)
 {
-    return 1.0-clamp(dot(Coord/Size-Position,Coord/Size-Position),0.0,1.0);
+    return clamp(dot(Coord/Size-Position,Coord/Size-Position),0.0,1.0);
 }
 
 float SelectMip (in float Roughness)
@@ -245,9 +245,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     vec2 uv = fragCoord.xy/iResolution.yy;    
     
     //Objects    
-    float s1 = Sphere(uv, vec2(1.5,1.25),0.25);	float s2 = Sphere(uv, vec2(4.5,1.25),0.25);
-    float s3 = Sphere(uv, vec2(3.0,2.75),0.25);	float s4 = Sphere(uv, vec2(6.0,2.75),0.25);    
-    float sph = s1*0.25+s2*0.25+s3*0.25+s4*0.25;    
+    float s1 = Sphere(uv, vec2(1.5,1.25),0.25);
+    float sph = s1*0.25;
     float spm = clamp(sph*64.0,0.0,1.0);   
     
     //Normals    
@@ -258,13 +257,11 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     //Shading    
 	uv = (2.0*fragCoord.xy-iMouse.xy*0.1)/(iResolution.yy*2.0);
     
-    vec2 uvr = ceil(s1)*Reflection(uv, vec2(1.5,1.25),0.25,vNormal.z) + ceil(s2)*Reflection(uv, vec2(4.5,1.25),0.25,vNormal.z)
-        	 + ceil(s3)*Reflection(uv, vec2(3.0,2.75),0.25,vNormal.z) + ceil(s4)*Reflection(uv, vec2(6.0,2.75),0.25,vNormal.z);    
+    vec2 uvr = ceil(s1)*Reflection(uv, vec2(1.5,1.25),0.25,vNormal.z);    
     
-    vec3 BaseColor = ceil(s1)*vec3(1.0,0.76,0.33) + ceil(s2)*vec3(0.66,0.61,0.53)
-                   + ceil(s3)*vec3(0.95,0.64,0.54)+ ceil(s4)*vec3(0.56,0.57,0.58);
+    vec3 BaseColor = ceil(s1)*vec3(1.0,0.76,0.33);
     
-    float Roughness = ceil(s1)*0.20+ceil(s2)*0.35+ceil(s3)*0.27+ceil(s4)*0.5;
+    float Roughness = ceil(s1)*0.20;
     	  Roughness = mix(Roughness*1.5, Roughness*0.67, texture(iChannel1,8.0*uvr).x);
        
     vec3 vLight = normalize(vec3(fragCoord.xy,128.0)-vec3(iMouse.xy,0.0));
