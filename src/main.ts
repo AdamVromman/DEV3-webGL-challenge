@@ -184,17 +184,17 @@ const init = () => {
 
     //SPHERE
 
-    // const sphereGeom = new THREE.SphereGeometry(10, 100, 100);
-    // //const sphereMaterial = new THREE.MeshBasicMaterial({color: 0xff00ff});
-    // const sphereMaterial = new THREE.ShaderMaterial({
-    //   uniforms: sphereUniforms,
-    //   vertexShader: sphereVertexShader,
-    //   fragmentShader: spherefragmentShader
-    // })
-    // sphere = new THREE.Mesh(sphereGeom, sphereMaterial);
-    // sphere.position.z = 100;
-    // sphere.position.x = 20;
-    // scene.add(sphere);
+    const sphereGeom = new THREE.SphereGeometry(40, 100, 100);
+    //const sphereMaterial = new THREE.MeshBasicMaterial({color: 0xff00ff});
+    const sphereMaterial = new THREE.ShaderMaterial({
+      uniforms: sphereUniforms,
+      vertexShader: sphereVertexShader,
+      fragmentShader: spherefragmentShader
+    })
+    sphere = new THREE.Mesh(sphereGeom, sphereMaterial);
+    sphere.position.z = 100;
+    sphere.position.x = 20;
+    scene.add(sphere);
 
   }
 }
@@ -265,6 +265,12 @@ const animate = () => {
   backgroundUniforms.iTime.value = TIME * 0.01;
 
   sphereUniforms.iResolution.value.set(WIDTH, HEIGHT, 1);
+  sphereUniforms.iMouse.value.set(mouseX, mouseY, 0, 0);
+  sphereUniforms.iChannelResolution.value[0] = new THREE.Vector4(3000, 3000, 0, 0);
+  sphereUniforms.iChannelResolution.value[1] = new THREE.Vector4();
+  sphereUniforms.iChannelResolution.value[2] = new THREE.Vector4();
+  sphereUniforms.iChannelResolution.value[3] = new THREE.Vector4();
+
   
   requestAnimationFrame(animate);
   render()
