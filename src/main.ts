@@ -5,7 +5,6 @@ import {
 } from "./shaders.js";
 import { clamp, easeOutQuart, lerp } from "./utilities.js";
 import stewie from "./stewie.jpg";
-import { FlakesTexture } from "three/addons/textures/FlakesTexture.js";
 
 const cirlesVisible: THREE.Object3D<THREE.Object3DEventMap>[] = [];
 const circlesInvisible: THREE.Object3D<THREE.Object3DEventMap>[] = [];
@@ -19,10 +18,13 @@ const backgroundUniforms = {
 };
 
 const sphereValues = [
-	{x: 50, y: 50, z: 70, s: -0.8, ry: 1},
-	{x: 20, y: 20, z: -30, s: 0.1, ry: 2},
-	{x: 50, y: -30, z: 30, s: 0.1, ry: 2},
+	{x: 50, y: 20, z: 70, s: -0.8, ry: 1},
+	{x: 20, y: 20, z: -40, s: 0.2, ry: 2},
+	{x: 50, y: -30, z: 30, s: -0.1, ry: 2},
 	{x: -30, y: -40, z: 50, s: -0.4, ry: -3.5},
+	{x: 0, y: 0, z: 10, s: -0.93, ry: -3.5},
+	{x: 30, y: 40, z: 30, s: -0.9, ry: -3.5},
+	{x: 10, y: -40, z: 60, s: -0.84, ry: -3.5},
 ];
 
 let 
@@ -154,9 +156,13 @@ function onWindowResize() {
 
 }
 
-const addNewTorus = (distance: number = -3000) => {
-	const geometry = new THREE.TorusGeometry(100, 1, 10, 100);
-	const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+const addNewCircle = (distance: number = -3000) => {
+	const geometry = new THREE.TorusGeometry(100, 5, 10, 100);
+	const material = new THREE.MeshPhysicalMaterial({ 
+		color: 0x822315,
+		roughness: 0.1,
+		metalness: 1.0
+	});
 	torus = new THREE.Mesh(geometry, material);
 	torus.position.z = distance;
 	torus.position.x = mouseX;
@@ -230,11 +236,22 @@ const init = () => {
 		plane.position.z = -3000;
 		scene.add(plane);
 
+		scene.fog = new THREE.Fog( 0x000000, 1500, 3000 );
+
 
 
 		//LIGHT
 		directionalLight = new THREE.DirectionalLight(0xffffff, 20);
 		directionalLight.position.set(0, 0, 500);
+
+		const light1 = new THREE.DirectionalLight(0xffffff, 20);
+		light1.position.set(-200, -200, 300);
+		scene.add(light1);
+
+		const light2 = new THREE.DirectionalLight(0xffffff, 20);
+		light2.position.set(200, 400, 100);
+		scene.add(light2);
+
 
 		ambientLight = new THREE.AmbientLight(0xffffff, 10); // soft white light
 
@@ -246,8 +263,8 @@ const init = () => {
 		//CIRCLES
 		for (let x = 0; x < 20; x++) {
 			const d = (3000 / 20) * -x;
-			cirlesVisible.push(addNewTorus(d));
-			circlesInvisible.push(addNewTorus());
+			cirlesVisible.push(addNewCircle(d));
+			circlesInvisible.push(addNewCircle());
 		}
 
 
@@ -268,13 +285,6 @@ const init = () => {
 			sphereTexture = textureLoader.load(stewie);
 		}
 
-		const normalMap3 = new THREE.CanvasTexture( new FlakesTexture() );
-		normalMap3.wrapS = THREE.RepeatWrapping;
-		normalMap3.wrapT = THREE.RepeatWrapping;
-		normalMap3.repeat.x = 10;
-		normalMap3.repeat.y = 6;
-		normalMap3.anisotropy = 16;
-
 		sphereTexture.colorSpace = THREE.SRGBColorSpace;
 		const sphereGeom = new THREE.IcosahedronGeometry(40, 100);
 		const sphereMaterial = new THREE.MeshPhysicalMaterial({
@@ -286,23 +296,23 @@ const init = () => {
 			emissive: 0x000000,
 			emissiveIntensity: 10,
 			reflectivity: 0.5,
+			fog: false
 		});
 
 		
 
 		group = new THREE.Group();
-		for (let y = 0; y < 4; y++)
-		{
+		sphereValues.forEach((value) => {
 			const sphere = new THREE.Mesh(sphereGeom, sphereMaterial);
 			sphere.receiveShadow = true;
-			sphere.scale.set(1 + sphereValues[y].s, 1 + sphereValues[y].s,  1 + sphereValues[y].s);
-			sphere.position.z = sphereValues[y].z;
-			sphere.position.x = sphereValues[y].x;
-			sphere.position.y = sphereValues[y].y;
-			sphere.rotation.y = sphereValues[y].ry;
+			sphere.scale.set(1 + value.s, 1 + value.s,  1 + value.s);
+			sphere.position.z = value.z;
+			sphere.position.x = value.x;
+			sphere.position.y = value.y;
+			sphere.rotation.y = value.ry;
 			spheres.push(sphere);
 			group.add(sphere);
-		}
+		});
 		scene.add(group);
 				
 	}
@@ -381,10 +391,9 @@ const animate = () => {
 	
 	directionalLight.position.set(mouseX * WIDTH, -mouseY * HEIGHT, 500);
 	group.rotation.y = TIME / 100;
-	//group.rotation.x = TIME / 50;
 	spheres.forEach((s, i) => {
-		s.rotation.y = -TIME / 100 + sphereValues[i].ry;
-		//s.rotation.x = -TIME / 50;
+		s.rotation.y = -TIME / 100 + 1.5;
+
 	});
 
 	cubeCamera.update(renderer, scene);
