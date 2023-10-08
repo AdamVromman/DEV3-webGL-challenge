@@ -6,7 +6,7 @@ import {
 import { clamp, easeOutQuart, lerp } from "./utilities.js";
 import stewie from "./stewie.jpg";
 
-const cirlesVisible: THREE.Object3D<THREE.Object3DEventMap>[] = [];
+const circlesVisible: THREE.Object3D<THREE.Object3DEventMap>[] = [];
 const circlesInvisible: THREE.Object3D<THREE.Object3DEventMap>[] = [];
 const spheres: THREE.Object3D<THREE.Object3DEventMap>[] = [];
 
@@ -63,7 +63,7 @@ const addingCycle = () => {
 		const newCircle = circlesInvisible.shift();
 		if (newCircle) {
 			newCircle.position.z = -3000;
-			cirlesVisible.push(newCircle);
+			circlesVisible.push(newCircle);
 		}
 	}
 	
@@ -77,9 +77,9 @@ const removingCycle = () => {
 	{
 		clearInterval(timeout);
 	}
-	if (playing)
+	if (playing && circlesVisible[0].position.z > 200)
 	{
-		const oldCircle = cirlesVisible.shift();
+		const oldCircle = circlesVisible.shift();
 		if (oldCircle) {
 			circlesInvisible.push(oldCircle);
 		}
@@ -157,7 +157,7 @@ function onWindowResize() {
 }
 
 const addNewCircle = (distance: number = -3000) => {
-	const geometry = new THREE.TorusGeometry(100, 5, 10, 100);
+	const geometry = new THREE.TorusGeometry(100, 5, 10, 50);
 	const material = new THREE.MeshPhysicalMaterial({ 
 		color: 0x822315,
 		roughness: 0.1,
@@ -236,7 +236,7 @@ const init = () => {
 		plane.position.z = -3000;
 		scene.add(plane);
 
-		scene.fog = new THREE.Fog( 0x000000, 1500, 3000 );
+		scene.fog = new THREE.Fog( 0x000000, 1500, 2000 );
 
 
 
@@ -263,7 +263,7 @@ const init = () => {
 		//CIRCLES
 		for (let x = 0; x < 20; x++) {
 			const d = (3000 / 20) * -x;
-			cirlesVisible.push(addNewCircle(d));
+			circlesVisible.push(addNewCircle(d));
 			circlesInvisible.push(addNewCircle());
 		}
 
@@ -286,7 +286,7 @@ const init = () => {
 		}
 
 		sphereTexture.colorSpace = THREE.SRGBColorSpace;
-		const sphereGeom = new THREE.IcosahedronGeometry(40, 100);
+		const sphereGeom = new THREE.IcosahedronGeometry(40, 50);
 		const sphereMaterial = new THREE.MeshPhysicalMaterial({
 			metalness: 1.0,
 			roughness: 0.1,
@@ -360,7 +360,7 @@ const animate = () => {
 	directionalLight.position.x = -horTurn * 300;
 	directionalLight.position.y = -vertTurn * 300;
 
-	cirlesVisible.forEach((t) => {
+	circlesVisible.forEach((t) => {
 		t.position.z += 2.5;
 		const x = lerp(
 			600 * horTurn,
@@ -391,7 +391,7 @@ const animate = () => {
 	
 	directionalLight.position.set(mouseX * WIDTH, -mouseY * HEIGHT, 500);
 	group.rotation.y = TIME / 100;
-	spheres.forEach((s, i) => {
+	spheres.forEach((s) => {
 		s.rotation.y = -TIME / 100 + 1.5;
 
 	});
