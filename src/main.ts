@@ -5,10 +5,12 @@ import {
 } from "./shaders.js";
 import { clamp, easeOutQuart, lerp } from "./utilities.js";
 import stewie from "./stewie.jpg";
+import { FlakesTexture } from "three/addons/textures/FlakesTexture.js";
 
 const cirlesVisible: THREE.Object3D<THREE.Object3DEventMap>[] = [];
 const circlesInvisible: THREE.Object3D<THREE.Object3DEventMap>[] = [];
 const spheres: THREE.Object3D<THREE.Object3DEventMap>[] = [];
+
 
 const backgroundUniforms = {
 	iResolution: { value: new THREE.Vector3() },
@@ -16,16 +18,26 @@ const backgroundUniforms = {
 	iDirection: { type: "v2f", value: new THREE.Vector2() },
 };
 
+const sphereValues = [
+	{x: 50, y: 50, z: 70, s: -0.8, ry: 1},
+	{x: 20, y: 20, z: -30, s: 0.1, ry: 2},
+	{x: 50, y: -30, z: 30, s: 0.1, ry: 2},
+	{x: -30, y: -40, z: 50, s: -0.4, ry: -3.5},
+];
+
 let 
-	camera: THREE.Camera,
+	camera: THREE.PerspectiveCamera,
+	cubeCamera: THREE.CubeCamera,
 	scene: THREE.Scene,
 	renderer: THREE.WebGLRenderer,
 	torus: THREE.Object3D<THREE.Object3DEventMap>,
 	plane: THREE.Object3D<THREE.Object3DEventMap>,
+	group: THREE.Object3D<THREE.Object3DEventMap>,
+	
 	
 	video: HTMLVideoElement | null,
 	ambientLight,
-	spotLight;
+	directionalLight: THREE.Object3D<THREE.Object3DEventMap>;
 
 
 
@@ -129,6 +141,19 @@ const normalizeMouseMovement = (x: number, y: number) => {
 	}
 };
 
+function onWindowResize() {
+
+	if (window)
+	{
+		WIDTH = window.innerWidth;
+		HEIGHT = window.innerHeight;
+	}
+	camera.updateProjectionMatrix();
+
+	renderer.setSize( WIDTH, HEIGHT );
+
+}
+
 const addNewTorus = (distance: number = -3000) => {
 	const geometry = new THREE.TorusGeometry(100, 1, 10, 100);
 	const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
@@ -175,12 +200,12 @@ const init = () => {
 
 		//SCENE
 		scene = new THREE.Scene();
-		scene.background = new THREE.Color(0x000000);
+		scene.background = new THREE.Color(0xffffff);
 
 
 
 		//CAMERA
-		const POV = 90;
+		const POV = 60;
 		const near = 1;
 		const far = 10000;
 
@@ -208,17 +233,12 @@ const init = () => {
 
 
 		//LIGHT
-		spotLight = new THREE.SpotLight(0xffffff, 100);
-		spotLight.position.set(-100, -100, 500);
-		spotLight.angle = Math.PI / 6;
-		spotLight.penumbra = 0.5;
-		spotLight.decay = 1;
-		spotLight.distance = 0;
+		directionalLight = new THREE.DirectionalLight(0xffffff, 20);
+		directionalLight.position.set(0, 0, 500);
 
 		ambientLight = new THREE.AmbientLight(0xffffff, 10); // soft white light
-		ambientLight.position.z = 500;
 
-		scene.add(spotLight);
+		scene.add(directionalLight);
 		scene.add(ambientLight);
 
 
@@ -232,6 +252,10 @@ const init = () => {
 
 
 
+		const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(256);
+		cubeRenderTarget.texture.type = THREE.HalfFloatType;
+		cubeCamera = new THREE.CubeCamera(1, 1000, cubeRenderTarget);
+
 		//SPHERE
 		const webcamAvailable = getCameraFeed();
 		let sphereTexture;
@@ -243,31 +267,43 @@ const init = () => {
 			const textureLoader = new THREE.TextureLoader();
 			sphereTexture = textureLoader.load(stewie);
 		}
-		sphereTexture.colorSpace = THREE.SRGBColorSpace;
-		const sphereGeom = new THREE.SphereGeometry(40, 100, 100);
-		const sphereMaterial = new THREE.MeshPhysicalMaterial({
-			metalness: 0.8,
-			roughness: 0.4,
-			color: 0xeba834,
-			map: sphereTexture,
-			reflectivity: 1.0,
-			emissive: 0x000000,
 
+		const normalMap3 = new THREE.CanvasTexture( new FlakesTexture() );
+		normalMap3.wrapS = THREE.RepeatWrapping;
+		normalMap3.wrapT = THREE.RepeatWrapping;
+		normalMap3.repeat.x = 10;
+		normalMap3.repeat.y = 6;
+		normalMap3.anisotropy = 16;
+
+		sphereTexture.colorSpace = THREE.SRGBColorSpace;
+		const sphereGeom = new THREE.IcosahedronGeometry(40, 100);
+		const sphereMaterial = new THREE.MeshPhysicalMaterial({
+			metalness: 1.0,
+			roughness: 0.1,
+			color: 0xffbb00,
+			envMap: cubeRenderTarget.texture,
+			map: sphereTexture,
+			emissive: 0x000000,
+			emissiveIntensity: 10,
+			reflectivity: 0.5,
 		});
-		for (let y = 0; y < 1; y++)
+
+		
+
+		group = new THREE.Group();
+		for (let y = 0; y < 4; y++)
 		{
 			const sphere = new THREE.Mesh(sphereGeom, sphereMaterial);
-			const randomX = -50 + Math.random() * 100;
-			const randomY = -50 + Math.random() * 100;
-			sphere.position.z = 100;
-			sphere.position.x = randomX;
-			sphere.position.y = randomY;
-			sphere.rotateY(-2);
+			sphere.receiveShadow = true;
+			sphere.scale.set(1 + sphereValues[y].s, 1 + sphereValues[y].s,  1 + sphereValues[y].s);
+			sphere.position.z = sphereValues[y].z;
+			sphere.position.x = sphereValues[y].x;
+			sphere.position.y = sphereValues[y].y;
+			sphere.rotation.y = sphereValues[y].ry;
 			spheres.push(sphere);
+			group.add(sphere);
 		}
-		spheres.forEach((s) => {
-			scene.add(s);
-		});
+		scene.add(group);
 				
 	}
 };
@@ -311,6 +347,8 @@ const animate = () => {
 		}
 	}
 	changeText(directionText,`${horTurn}, ${vertTurn}`);
+	directionalLight.position.x = -horTurn * 300;
+	directionalLight.position.y = -vertTurn * 300;
 
 	cirlesVisible.forEach((t) => {
 		t.position.z += 2.5;
@@ -338,9 +376,18 @@ const animate = () => {
 	}
 
 	backgroundUniforms.iResolution.value.set(WIDTH, HEIGHT, 1);
-	backgroundUniforms.iDirection.value.set(horTurn % 0.01,vertTurn / 10);
+	backgroundUniforms.iDirection.value.set(horTurn / 5, vertTurn / 5);
 	backgroundUniforms.iTime.value = TIME * 0.01;
+	
+	directionalLight.position.set(mouseX * WIDTH, -mouseY * HEIGHT, 500);
+	group.rotation.y = TIME / 100;
+	//group.rotation.x = TIME / 50;
+	spheres.forEach((s, i) => {
+		s.rotation.y = -TIME / 100 + sphereValues[i].ry;
+		//s.rotation.x = -TIME / 50;
+	});
 
+	cubeCamera.update(renderer, scene);
 	requestAnimationFrame(animate);
 	render();
 };
@@ -377,6 +424,8 @@ window.addEventListener("keyup", (e) => {
 		vertKey = "none";
 	}
 });
+
+window.addEventListener( "resize", onWindowResize );
 
 window.addEventListener("blur", () => {
 	stopLoop();
