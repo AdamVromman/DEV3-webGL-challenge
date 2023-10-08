@@ -6,6 +6,16 @@ import {
 import { clamp, easeOutQuart, lerp } from "./utilities.js";
 import stewie from "./stewie.jpg";
 
+const cirlesVisible: THREE.Object3D<THREE.Object3DEventMap>[] = [];
+const circlesInvisible: THREE.Object3D<THREE.Object3DEventMap>[] = [];
+const spheres: THREE.Object3D<THREE.Object3DEventMap>[] = [];
+
+const backgroundUniforms = {
+	iResolution: { value: new THREE.Vector3() },
+	iTime: { value: 0 },
+	iDirection: { type: "v2f", value: new THREE.Vector2() },
+};
+
 let 
 	camera: THREE.Camera,
 	scene: THREE.Scene,
@@ -17,13 +27,11 @@ let
 	ambientLight,
 	spotLight;
 
-const cirlesVisible: THREE.Object3D<THREE.Object3DEventMap>[] = [];
-const circlesInvisible: THREE.Object3D<THREE.Object3DEventMap>[] = [];
-const spheres: THREE.Object3D<THREE.Object3DEventMap>[] = [];
+
 
 let
-	vertTurn = 0,
-	horTurn = 0,
+	vertTurn = 0.0,
+	horTurn = 0.0,
 	vertKey = "none",
 	horKey = "none";
 
@@ -31,39 +39,46 @@ let
 	mouseX = 0, 
 	mouseY = 0, 
 	playing = true, 
-	trackMouse = true, 
 	WIDTH = 0, 
 	HEIGHT = 0, 
 	TIME = 0;
 
 const addingCycle = () => {
-	const newCircle = circlesInvisible.shift();
-	if (newCircle) {
-		newCircle.position.z = -3000;
-		cirlesVisible.push(newCircle);
+	if (playing)
+	{
+		const newCircle = circlesInvisible.shift();
+		if (newCircle) {
+			newCircle.position.z = -3000;
+			cirlesVisible.push(newCircle);
+		}
 	}
+	
 };
 
 const addingInterval = setInterval(addingCycle, 1000);
 let removingInterval;
 
 const removingCycle = () => {
-	const oldCircle = cirlesVisible.shift();
-	if (oldCircle) {
-		circlesInvisible.push(oldCircle);
+	if (timeout)
+	{
+		clearInterval(timeout);
 	}
+	if (playing)
+	{
+		const oldCircle = cirlesVisible.shift();
+		if (oldCircle) {
+			circlesInvisible.push(oldCircle);
+		}
+	}
+	
 };
 
 const timeout = setTimeout(() => {
 	removingInterval = setInterval(removingCycle, 1000);
 });
 
-const backgroundUniforms = {
-	iResolution: { value: new THREE.Vector3() },
-	iTime: { value: 0 },
-	iDirection: { value: new THREE.Vector2() },
-};
-const trackingText = document.getElementById("tracking");
+
+
 const playingText = document.getElementById("playing");
 const directionText = document.getElementById("direction");
 const timeText = document.getElementById("time");
@@ -126,12 +141,12 @@ const addNewTorus = (distance: number = -3000) => {
 
 const playLoop = () => {
 	playing = true;
-	changeText(trackingText, "playing");
+	changeText(playingText, "playing");
 	requestAnimationFrame(animate);
 };
 
 const stopLoop = () => {
-	changeText(trackingText, "stopped");
+	changeText(playingText, "stopped");
 	playing = false;
 };
 
@@ -239,7 +254,7 @@ const init = () => {
 			emissive: 0x000000,
 
 		});
-		for (let y = 0; y < 5; y++)
+		for (let y = 0; y < 1; y++)
 		{
 			const sphere = new THREE.Mesh(sphereGeom, sphereMaterial);
 			const randomX = -50 + Math.random() * 100;
@@ -263,37 +278,39 @@ const render = () => {
 
 const animate = () => {
 	TIME++;
+	changeText(timeText, `${TIME / 100}s`);
 	switch (horKey) {
 	case "ArrowLeft":
-		horTurn = clamp((horTurn -= 0.01), -1, 1);
+		horTurn = Math.round(clamp((horTurn -= 0.01), -1, 1) * 100) / 100;
 		break;
 	case "ArrowRight":
-		horTurn = clamp((horTurn += 0.01), -1, 1);
+		horTurn = Math.round(clamp((horTurn += 0.01), -1, 1) * 100) / 100;
 		break;
 	default:
 		if (horTurn < 0) {
-			horTurn = clamp((horTurn += 0.01), -1, 0);
+			horTurn = Math.round(clamp((horTurn += 0.01), -1, 0) * 100) / 100;
 		}
 		if (horTurn > 0) {
-			horTurn = clamp((horTurn -= 0.01), 0, 1);
+			horTurn = Math.round(clamp((horTurn -= 0.01), 0, 1) * 100) / 100;
 		}
 	}
 
 	switch (vertKey) {
 	case "ArrowUp":
-		vertTurn = clamp((vertTurn += 0.01), -1, 1);
+		vertTurn = Math.round(clamp((vertTurn += 0.01), -1, 1) * 100) / 100;
 		break;
 	case "ArrowDown":
-		vertTurn = clamp((vertTurn -= 0.01), -1, 1);
+		vertTurn = Math.round(clamp((vertTurn -= 0.01), -1, 1) * 100) / 100;
 		break;
 	default:
 		if (vertTurn < 0) {
-			vertTurn = clamp((vertTurn += 0.01), -1, 0);
+			vertTurn = Math.round(clamp((vertTurn += 0.01), -1, 0) * 100) / 100;
 		}
 		if (vertTurn > 0) {
-			vertTurn = clamp((vertTurn -= 0.01), 0, 1);
+			vertTurn = Math.round(clamp((vertTurn -= 0.01), 0, 1) * 100) / 100;
 		}
 	}
+	changeText(directionText,`${horTurn}, ${vertTurn}`);
 
 	cirlesVisible.forEach((t) => {
 		t.position.z += 2.5;
@@ -321,8 +338,9 @@ const animate = () => {
 	}
 
 	backgroundUniforms.iResolution.value.set(WIDTH, HEIGHT, 1);
-	backgroundUniforms.iDirection.value.set(horTurn, vertTurn);
+	backgroundUniforms.iDirection.value.set(horTurn % 0.01,vertTurn / 10);
 	backgroundUniforms.iTime.value = TIME * 0.01;
+
 	requestAnimationFrame(animate);
 	render();
 };
@@ -334,15 +352,10 @@ window.addEventListener("keypress", (e) => {
 	if (e.isComposing || e.key === "e") {
 		playing ? stopLoop() : playLoop();
 	}
-
-	if (e.isComposing || e.key === "t") {
-		trackMouse = !trackMouse;
-		changeText(playingText, `${trackMouse ? "" : "not "}tracking`);
-	}
 });
 
 window.addEventListener("mousemove", (e) => {
-	if (e.pageX && e.pageY && trackMouse) {
+	if (e.pageX && e.pageY) {
 		normalizeMouseMovement(e.pageX, e.pageY);
 	}
 });
@@ -363,4 +376,12 @@ window.addEventListener("keyup", (e) => {
 	if (e.key === "ArrowUp" || e.key === "ArrowDown") {
 		vertKey = "none";
 	}
+});
+
+window.addEventListener("blur", () => {
+	stopLoop();
+});
+
+window.addEventListener("focus", () => {
+	playLoop();
 });
