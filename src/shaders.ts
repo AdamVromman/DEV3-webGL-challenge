@@ -115,7 +115,7 @@ vec3 stars(vec2 uv, float offset){
     
     // translate uv then scale for center
     uv -= vec2(0.5);
-    uv = scale( vec2(trans) ) * (uv + iDirection.xy);
+    uv = scale( vec2(trans) ) * (uv);
     uv += vec2(0.5);
     
     // create square aspect ratio
@@ -142,26 +142,16 @@ vec3 stars(vec2 uv, float offset){
     
     // calculate random xy and size
     vec2 rndXY = N22(newRnd + ipos*(offset+1.))*0.9+0.05;
-    float rndSize = N21(ipos)*100.+200.;
+    float rndSize = N21(ipos)*100.+100.;
     
     
     vec2 j = (rndXY - uv)*rndSize;
     float sparkle = 1./dot(j,j);
+
     
     col += spectrum(fract(rndXY*newRnd*ipos)) * vec3(sparkle);
     
-    
-	// visualize layers
-    /*if ((uv.x > 9. || uv.y > 0.99) && ipos.y == 8.){
-        col += vec3(1.,0.,0.)*smoothstep(1.,0.5,trans);
-    }
-    if (mod(offset,3.) == 0.){
-    	if (uv.x > 0.99 || uv.y > 0.99){
-        	col += vec3(1.,0.,0.)*smoothstep(0.2,0.1,trans);
-    	}
-    }*/
-    
-   	col *= smoothstep(1.,0.8,trans);	
+    col *= smoothstep(1.,0.8,trans);	
     col *= smoothstep(0.,0.1,trans);
     return col;
        
@@ -171,6 +161,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
     // Normalized pixel coordinates (from 0 to 1)
     vec2 uv = fragCoord/iResolution.xy;
+    uv = uv - iDirection;
     
     vec3 col = vec3(0.);
 	

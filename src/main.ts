@@ -57,6 +57,7 @@ let
 	HEIGHT = 0, 
 	TIME = 0;
 
+//INTERVAL TO ADD A CIRCLE	
 const addingCycle = () => {
 	if (playing)
 	{
@@ -72,6 +73,7 @@ const addingCycle = () => {
 const addingInterval = setInterval(addingCycle, 1000);
 let removingInterval;
 
+//INTERVAL TO REMOVE A CIRCLE
 const removingCycle = () => {
 	if (timeout)
 	{
@@ -87,12 +89,13 @@ const removingCycle = () => {
 	
 };
 
+//START REMOVING CIRCLES ONE SECOND LATER
 const timeout = setTimeout(() => {
 	removingInterval = setInterval(removingCycle, 1000);
 });
 
 
-
+// TEXT ELEMENTS
 const playingText = document.getElementById("playing");
 const directionText = document.getElementById("direction");
 const timeText = document.getElementById("time");
@@ -103,6 +106,7 @@ const changeText = (element: HTMLElement | null, text: string) => {
 	}
 };
 
+//GET THE WEBCAM FEED
 const getCameraFeed = () => {
 	if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia ) {
 
@@ -133,6 +137,7 @@ const getCameraFeed = () => {
 	return true;
 };
 
+//MOUSE COORDINATES BETWEEN -1 AND 1 ON X/Y
 const normalizeMouseMovement = (x: number, y: number) => {
 	if (window) {
 		const xNorm = (x - WIDTH / 2) / (WIDTH / 2);
@@ -143,6 +148,8 @@ const normalizeMouseMovement = (x: number, y: number) => {
 	}
 };
 
+
+//RESIZE FUNCTION
 function onWindowResize() {
 
 	if (window)
@@ -156,6 +163,7 @@ function onWindowResize() {
 
 }
 
+//SPAWN NEW CIRCLE
 const addNewCircle = (distance: number = -3000) => {
 	const geometry = new THREE.TorusGeometry(100, 5, 10, 50);
 	const material = new THREE.MeshPhysicalMaterial({ 
@@ -170,17 +178,20 @@ const addNewCircle = (distance: number = -3000) => {
 	return torus;
 };
 
+//PLAY
 const playLoop = () => {
 	playing = true;
 	changeText(playingText, "playing");
 	requestAnimationFrame(animate);
 };
 
+//PAUZE
 const stopLoop = () => {
 	changeText(playingText, "stopped");
 	playing = false;
 };
 
+//INITIALISE SCENE, ETC.
 const init = () => {
 	const container = document.getElementById("container");
 	const canvas = document.getElementById("canvas");
@@ -318,13 +329,16 @@ const init = () => {
 	}
 };
 
+//RENDER SCENE
 const render = () => {
 	renderer.render(scene, camera);
 };
 
+//ANIMATE SCENE
 const animate = () => {
 	TIME++;
 	changeText(timeText, `${TIME / 100}s`);
+
 	switch (horKey) {
 	case "ArrowLeft":
 		horTurn = Math.round(clamp((horTurn -= 0.01), -1, 1) * 100) / 100;
@@ -357,18 +371,16 @@ const animate = () => {
 		}
 	}
 	changeText(directionText,`${horTurn}, ${vertTurn}`);
-	directionalLight.position.x = -horTurn * 300;
-	directionalLight.position.y = -vertTurn * 300;
 
 	circlesVisible.forEach((t) => {
 		t.position.z += 2.5;
 		const x = lerp(
-			600 * horTurn,
+			2000 * horTurn,
 			0,
 			easeOutQuart((t.position.z + 3000) / 3200)
 		);
 		const y = lerp(
-			600 * vertTurn,
+			2000 * vertTurn,
 			0,
 			easeOutQuart((t.position.z + 3000) / 3200)
 		);
@@ -385,16 +397,23 @@ const animate = () => {
 		return;
 	}
 
+
+	//SET SHADER UNIFORMS
 	backgroundUniforms.iResolution.value.set(WIDTH, HEIGHT, 1);
 	backgroundUniforms.iDirection.value.set(horTurn / 5, vertTurn / 5);
 	backgroundUniforms.iTime.value = TIME * 0.01;
 	
+
+	//LIGHT FOLLOW POINTER
 	directionalLight.position.set(mouseX * WIDTH, -mouseY * HEIGHT, 500);
+
+	//SPHERES GROUP ROTATION AND INDIVIDUAL SPHERE COUNTERROTATION
 	group.rotation.y = TIME / 100;
 	spheres.forEach((s) => {
 		s.rotation.y = -TIME / 100 + 1.5;
 
 	});
+
 
 	cubeCamera.update(renderer, scene);
 	requestAnimationFrame(animate);
@@ -404,18 +423,22 @@ const animate = () => {
 init();
 requestAnimationFrame(animate);
 
+
+//PRESS E FOR PAUSE
 window.addEventListener("keypress", (e) => {
 	if (e.isComposing || e.key === "e") {
 		playing ? stopLoop() : playLoop();
 	}
 });
 
+//MOUSE MOVEMENT
 window.addEventListener("mousemove", (e) => {
 	if (e.pageX && e.pageY) {
 		normalizeMouseMovement(e.pageX, e.pageY);
 	}
 });
 
+//LISTEN TO ARROW KEYS
 window.addEventListener("keydown", (e) => {
 	if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
 		horKey = e.key;
@@ -434,12 +457,15 @@ window.addEventListener("keyup", (e) => {
 	}
 });
 
+//LISTEN TO RESIZE
 window.addEventListener( "resize", onWindowResize );
 
+//PAUSE ON TAB OUT
 window.addEventListener("blur", () => {
 	stopLoop();
 });
 
+//PLAY ON TAB IN
 window.addEventListener("focus", () => {
 	playLoop();
 });
